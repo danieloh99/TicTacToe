@@ -46,7 +46,7 @@ class AI(Player):
         self.opponent = 'X' if id == 'O' else 'O'
         self.board = self.game_world.board
 
-    def minimax(self, board, depth, ai_turn):
+    def minimax(self, board, depth, ai_turn, alpha, beta):
         """Algorithm to determine a move's value by recursively going through
         all possible future board setups based on the current board.
 
@@ -58,31 +58,37 @@ class AI(Player):
         # First checks current state of the board. If the opponent won,
         # return -1. If the AI won, return +1. If the board is tied, return 0.
         if self.game_world.check_win(board) == self.opponent:
-            return -1
+            return -100 + depth
         if self.game_world.check_win(board) is not 'None':
-            return 1
+            return 100 - depth
         if self.game_world.board_is_full(board):
             return 0
 
         if ai_turn:  # Maximizer: AI wants to choose the best move for itself.
-            best_score = -2
+            best_score = float("-inf")
             for index in range(9):
                 if self.board[index] != '_':
                     continue
                 board[index] = self.id
-                best_score = max(best_score,
-                                self.minimax(board, depth + 1, False))
+                score_of_move = self.minimax(board, depth + 1, False, alpha, beta)
+                best_score = max(best_score, score_of_move)
+                alpha = max(best_score, alpha)
                 board[index] = '_'
+                if (beta <= alpha):
+                    break
             return best_score
         else:  # Minimizer: AI computes which move is best for human to make.
-            best_score = 2
+            best_score = float("inf")
             for index in range(9):
                 if board[index] != '_':
                     continue
-                board[index] = 'X' if self.id == 'O' else 'O'
-                best_score = min(best_score,
-                                self.minimax(board, depth + 1, True))
+                board[index] = self.opponent#'X' if self.id == 'O' else 'O'
+                score_of_move = self.minimax(board, depth + 1, True, alpha, beta)
+                best_score = min(best_score, score_of_move)
+                beta = min(best_score, beta)
                 board[index] = '_'
+                if (beta <= alpha):
+                    break
             return best_score
 
     def get_move_helper(self, board):
@@ -103,7 +109,7 @@ class AI(Player):
             # the move is better than the current best move, by comparing the
             # return value of the minimax function with the current best_value
             board[index] = self.id
-            move_value = self.minimax(board, 0, False)
+            move_value = self.minimax(board, 0, False, float("-inf"), float("inf"))
             board[index] = '_'
 
             # Keep track of the best move, and return it at the end.
